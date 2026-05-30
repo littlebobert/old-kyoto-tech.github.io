@@ -31,11 +31,13 @@ const { lang = "en" } = Astro.props as Props;
 const t = useTranslations(lang);
 const homeUrl = lang === "ja" ? "/ja/" : "/";
 const submitEmail = "justin.garcia@gmail.com";
-const submitSubject = encodeURIComponent("Kyoto Tech Meetup idea");
-const submitBody = encodeURIComponent(`Idea:
+const submitSubjectBase = "Kyoto Tech Meetup idea";
+const submitSubject = encodeURIComponent(submitSubjectBase);
+const submitBodyTemplate = `Idea:
 
 Who it helps:
-`);
+`;
+const submitBody = encodeURIComponent(submitBodyTemplate);
 const submitUrl = `mailto:${submitEmail}?subject=${submitSubject}&body=${submitBody}`;
 
 const ideaModules = import.meta.glob("../data/ideas/*.json", {
@@ -79,6 +81,7 @@ const localizeList = (value: LocalizedList) => value[lang] ?? value.en;
             <div class="mt-8 flex flex-wrap gap-3">
               <a
                 href={submitUrl}
+                data-idea-submit-link
                 class="inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
               >
                 <FaEnvelope aria-hidden="true" />
@@ -138,3 +141,29 @@ const localizeList = (value: LocalizedList) => value[lang] ?? value.en;
 
   <Footer lang={lang} />
 </Layout>
+
+<script
+  is:inline
+  define:vars={{ submitEmail, submitSubjectBase, submitBodyTemplate }}
+>
+  const buildIdeaSubmissionHref = () => {
+    const datePart = new Date()
+      .toISOString()
+      .replace(/\D/g, "")
+      .slice(0, 14);
+    const randomPart = Math.random().toString(36).slice(2, 8).toUpperCase();
+    const submissionId = `KTI-${datePart}-${randomPart}`;
+    const subject = `${submitSubjectBase} - ${submissionId}`;
+
+    return `mailto:${submitEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(submitBodyTemplate)}`;
+  };
+
+  document.querySelectorAll("[data-idea-submit-link]").forEach((link) => {
+    const updateHref = () => {
+      link.setAttribute("href", buildIdeaSubmissionHref());
+    };
+
+    updateHref();
+    link.addEventListener("click", updateHref);
+  });
+</script>
